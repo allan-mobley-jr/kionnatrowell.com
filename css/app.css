@@ -143,6 +143,13 @@ app {
     transform: translate(-50%, -50%);
 }
 
+.image-banner {
+    background: url('/banner.jpg') no-repeat top;
+    background-size: 100%;
+    width: 100vw;
+    height: 100vh;
+}
+
 @media (max-width: 767.98px) {
     .main .top-row:not(.auth) {
         display: none;
