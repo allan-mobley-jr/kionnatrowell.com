@@ -14,6 +14,10 @@
                     She will major in Criminal Justice with a focus in Forensic Science. 
                     We wish her all the best!
                 </p>
+                <p>
+                    Watch her virtual graduation online <a href="www.gcpsk12.org">here</a> 
+                    on Friday, May 22nd at 8:30pm.
+                </p>
             </div>
         </div>
         @if ((posts?.Count ?? 0) > 0)
@@ -69,7 +73,7 @@
                                autocomplete="new-password" />
                         <small id="codeHelp" class="form-text text-muted">Necessary in order to post. Reach out to a direct family member if you would like to leave a post.</small>
                     </div>
-                    <button type="submit" class="btn btn-primary float-right">Submit</button>
+                    <button type="submit" disabled=@disabled class="btn btn-primary float-right">Submit</button>
                 </EditForm>
             </div>
         </div>
@@ -80,6 +84,7 @@
     Post post = new Post();
     List<Post> posts;
     string error;
+    bool disabled;
 
     protected async override Task OnInitializedAsync()
     {
@@ -88,30 +93,32 @@
 
     private async Task SubmitPost()
     {
-        if (true)
+        try
         {
-            try
+            disabled = true;
+            StateHasChanged();
+
+            var response = await httpClient.PostAsJsonAsync<Post>(
+                "https://mobsites.azurewebsites.net/api/GraduationPost", 
+                post);
+
+            if (response.IsSuccessStatusCode)
             {
-                var response = await httpClient.PostAsJsonAsync<Post>(
-                    "https://mobsites.azurewebsites.net/api/GraduationPost", 
-                    post);
+                posts = await httpClient.GetFromJsonAsync<List<Post>>("https://mobsites.azurewebsites.net/api/GraduationPosts");
 
-                if (response.IsSuccessStatusCode)
-                {
-                    posts = await httpClient.GetFromJsonAsync<List<Post>>("https://mobsites.azurewebsites.net/api/GraduationPosts");
-
-                    post = new Post();
-                }
-                else
-                {
-                    error = "Post was rejected. Make sure you input the correct code. Casing matters!";
-                }
+                post = new Post();
             }
-            catch (System.Exception ex)
-            {  
-                error = ex.Message;
+            else
+            {
+                error = "Post was rejected. Make sure you input the correct code. Casing matters!";
             }
         }
+        catch (System.Exception ex)
+        {  
+            error = ex.Message;
+        }
+
+        disabled = false;
     }
 
     private void ClearError()
