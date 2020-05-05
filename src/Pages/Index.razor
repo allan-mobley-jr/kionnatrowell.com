@@ -1,4 +1,5 @@
 @page "/"
+@inject HttpClient httpClient
 
 <div class="container-fluid banner-container">
     <img src="/banner.jpg" class="img-fluid banner" />
@@ -7,7 +8,7 @@
             <div class="col-md-6 mb-5">
                 <img src="/profile.jpg" class="img-thumbnail"/>
             </div>
-            <div class="col-md-6 m-auto text-light">
+            <div class="col-md-6 m-auto">
                 <p>
                     Kionna will be attending the University of North Georgia this fall. 
                     She will major in Criminal Justice with a focus in Forensic Science. 
@@ -15,5 +16,118 @@
                 </p>
             </div>
         </div>
+        @if ((posts?.Count ?? 0) > 0)
+        {
+            foreach (var post in posts)
+            {
+                <div class="row mt-3 mb-5">
+                    <div class="col-10 offset-1 col-md-6 offset-md-3 col-lg-4 offset-lg-4">
+                        <span class="text-muted">@post.Message</span>
+                        <br />
+                        <span class="text-muted float-right">&mdash; @post.From</span>
+                    </div>
+                </div>
+            }
+        }
+        <div class="row mt-3 mb-5">
+            <div class="col-12 col-md-6 offset-md-3 col-lg-4 offset-lg-4">
+                <h5 class="text-primary text-center">Tell Kionna how proud you are!</h5>
+                <EditForm Model="post" OnValidSubmit="SubmitPost">
+                    <DataAnnotationsValidator />
+                    <ValidationSummary />
+                    @if (error != null)
+                    {
+                        <div class="validation-message mb-2">@error</div>
+                    }
+                    <div class="form-group">
+                        <label class="text-muted" for="from">From</label>
+                        <InputText  type="text"
+                               class="form-control" 
+                               id="from" 
+                               @bind-Value="post.From"
+                               @onfocus="ClearError"
+                               aria-describedby="fromHelp" 
+                               autocomplete="name" />
+                        <small id="fromHelp" class="form-text text-muted">Your name or group description or something intimate, such as Nana, or The So-and-So Family.</small>
+                    </div>
+                    <div class="form-group">
+                        <label class="text-muted" for="message">Message</label>
+                        <InputTextArea  class="form-control" 
+                                  id="message"
+                                  @bind-Value="post.Message"
+                                  @onfocus="ClearError"
+                                  rows="5" />
+                    </div>
+                    <div class="form-group">
+                        <label class="text-muted" for="code">Post Code</label>
+                        <InputText  type="password" 
+                               class="form-control"
+                               @bind-Value="post.Code" 
+                               @onfocus="ClearError"
+                               id="code" 
+                               aria-describedby="codeHelp" 
+                               autocomplete="new-password" />
+                        <small id="codeHelp" class="form-text text-muted">Necessary in order to post. Reach out to a direct family member if you would like to leave a post.</small>
+                    </div>
+                    <button type="submit" class="btn btn-primary float-right">Submit</button>
+                </EditForm>
+            </div>
+        </div>
     </div>
 </div>
+
+@code {
+    Post post = new Post();
+    List<Post> posts;
+    string error;
+
+    protected async override Task OnInitializedAsync()
+    {
+        posts = await httpClient.GetFromJsonAsync<List<Post>>("https://mobsites.azurewebsites.net/api/GraduationPosts");
+    }
+
+    private async Task SubmitPost()
+    {
+        if (true)
+        {
+            try
+            {
+                var response = await httpClient.PostAsJsonAsync<Post>(
+                    "https://mobsites.azurewebsites.net/api/GraduationPost", 
+                    post);
+
+                if (response.IsSuccessStatusCode)
+                {
+                    posts = await httpClient.GetFromJsonAsync<List<Post>>("https://mobsites.azurewebsites.net/api/GraduationPosts");
+
+                    post = new Post();
+                }
+                else
+                {
+                    error = "Post was rejected. Make sure you input the correct code. Casing matters!";
+                }
+            }
+            catch (System.Exception ex)
+            {  
+                error = ex.Message;
+            }
+        }
+    }
+
+    private void ClearError()
+    {
+        error = null;
+    }
+
+    class Post
+    {
+        [Required]
+        public string From { get; set; }
+
+        [Required]
+        public string Message { get; set; }
+
+        [Required]
+        public string Code { get; set; }
+    }
+}
